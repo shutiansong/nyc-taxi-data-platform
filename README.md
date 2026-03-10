@@ -8,7 +8,7 @@ The project focuses on **deterministic batch processing, explicit data quality s
 
 # Architecture Overview
 
-![Architecture](architecture/pipeline_architecture.png)
+![Architecture](screenshots/pipeline_architecture.png)
 
 Pipeline flow:
 
