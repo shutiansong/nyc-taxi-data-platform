@@ -26,6 +26,20 @@ All components run as isolated containers orchestrated with Docker Compose.
 
 ---
 
+# Technology Stack
+
+| Layer | Technology |
+|------|------|
+| Orchestration | Airflow |
+| Processing | Spark (PySpark) |
+| Warehouse | PostgreSQL |
+| Transformation | dbt |
+| BI / Visualization | Metabase |
+| Infrastructure | Docker Compose |
+| Data Source | NYC Yellow Taxi Trip Data |
+
+---
+
 # Key Features
 
 - Deterministic **monthly batch processing (batch-id = YYYY-MM)**
@@ -74,20 +88,6 @@ Dashboards built with **Metabase** provide insights including:
 - pickup zone spatial analytics
 
 ![Metabase Dashboard](screenshots/metabase_dashboard.png)
-
----
-
-# Technology Stack
-
-| Layer | Technology |
-|------|------|
-| Orchestration | Airflow |
-| Processing | Spark (PySpark) |
-| Warehouse | PostgreSQL |
-| Transformation | dbt |
-| BI / Visualization | Metabase |
-| Infrastructure | Docker Compose |
-| Data Source | NYC Yellow Taxi Trip Data |
 
 ---
 
