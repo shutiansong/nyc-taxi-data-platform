@@ -27,7 +27,7 @@ A production-grade **batch ELT data platform** for NYC Taxi trip datasets, empha
 
 1. [Architecture Overview](#architecture-overview)  
 2. [Technology Stack](#technology-stack)  
-3. [Pipeline Flow](#pipeline-flow)  
+3. [Pipeline Orchestration (Airflow)](#pipeline-orchestration-airflow)  
 4. [Raw ELT Layer (Spark)](#raw-elt-layer-spark)  
 5. [dbt Transformation Layer](#dbt-transformation-layer)  
 6. [Analytics Dashboards](#analytics-dashboards-metabase)  
@@ -63,16 +63,6 @@ All components run as isolated **Docker containers** orchestrated via **Docker C
 | BI / Visualization | Metabase |
 | Infrastructure | Docker Compose |
 | Data Source | NYC Yellow Taxi Trip Data (monthly Parquet) |
-
----
-
-# Pipeline Flow
-
-1. **Raw Parquet Data (Monthly)**: ingested from source  
-2. **Spark Batch ELT**: deterministic ingestion, DQ validation, classification into clean / suspicious / critical  
-3. **PostgreSQL Warehouse**: stores base and quarantine tables; partition + truncate + rewrite for rerun-safe snapshots; metadata logging  
-4. **dbt Transformation Layer**: staging → intermediate → analytics; deduplication, metrics, DQ signals, dimensional modeling  
-5. **Metabase Dashboards**: trip counts, revenue, vendor performance, payment mix, pickup-zone spatial analysis  
 
 ---
 
