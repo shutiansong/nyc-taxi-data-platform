@@ -19,7 +19,7 @@
 ![Infrastructure](https://img.shields.io/badge/Infra-Dockerized-2496ED)
 ![Processing Model](https://img.shields.io/badge/Processing-Deterministic-red)
 
-A production-grade **batch ELT data platform** for NYC Taxi trip datasets, emphasizing **deterministic batch processing, explicit data quality signaling, and safe reruns**. Fully **containerized** for reproducibility and modular orchestration.
+A production-style **batch ELT data platform** for NYC Taxi trip datasets, emphasizing **deterministic batch processing, explicit data quality signaling, and safe reruns**. Fully **containerized** for reproducibility and modular orchestration.
 
 ---
 
@@ -27,14 +27,15 @@ A production-grade **batch ELT data platform** for NYC Taxi trip datasets, empha
 
 1. [Architecture Overview](#architecture-overview)
 2. [Technology Stack](#technology-stack)
-3. [Pipeline Orchestration (Airflow)](#pipeline-orchestration-airflow)
-4. [Raw ELT Layer (Spark)](#raw-elt-layer-spark)
-5. [dbt Transformation Layer](#dbt-transformation-layer)
-6. [Analytics Dashboards](#analytics-dashboards-metabase)
-7. [Batch Semantics & Determinism](#batch-semantics--determinism)
-8. [Design Principles](#design-principles)
-9. [Lessons Learned](#lessons-learned)
-10. [Summary](#summary)
+3. [Repository Structure](#repository-structure)
+4. [Pipeline Orchestration (Airflow)](#pipeline-orchestration-airflow)
+5. [Raw ELT Layer (Spark)](#raw-elt-layer-spark)
+6. [dbt Transformation Layer](#dbt-transformation-layer)
+7. [Analytics Dashboards](#analytics-dashboards-metabase)
+8. [Batch Semantics & Determinism](#batch-semantics--determinism)
+9. [Design Principles](#design-principles)
+10. [Lessons Learned](#lessons-learned)
+11. [Summary](#summary)
 
 ---
 
@@ -63,6 +64,71 @@ All components run as isolated **Docker containers** orchestrated via **Docker C
 | BI / Visualization | Metabase |
 | Infrastructure | Docker Compose |
 | Data Source | NYC Yellow Taxi Trip Data (2024 full-year dataset, monthly Parquet) |
+
+---
+
+# Repository Structure
+
+The structure below reflects the original project layout used during development.  
+Only documentation and screenshots are included in this public repository.
+
+```text
+nyc-taxi-data-platform
+│
+├── airflow/                          # Airflow orchestration environment
+│   ├── dags/
+│   │   ├── utils/                    # DAG helper utilities
+│   │   └── ny_taxi_monthly_ingestion_dag.py
+│   │
+│   ├── sql/
+│   │   └── upsert_batch_ingestion_stats.sql   # metadata upsert logic
+│   │
+│   ├── Dockerfile
+│   ├── docker-compose.yaml
+│   ├── requirements.txt
+│   ├── .env
+│   │
+│   ├── config/                       # Airflow configuration
+│   ├── logs/                         # Airflow runtime logs
+│   └── plugins/                      # Airflow plugins
+│
+├── spark/                            # Spark processing container
+│   ├── Dockerfile
+│   ├── docker-compose.yaml
+│   ├── requirements.txt
+│   └── .env
+│
+├── jobs/                             # Spark batch ELT scripts
+│   ├── ny_taxi_elt.py
+│   └── utils/
+│
+├── warehouse/                        # PostgreSQL warehouse bootstrap
+│   ├── docker-compose.yaml
+│   └── ddl/                          # One-time schema creation
+│       └── *.sql
+│
+├── dbt/                              # dbt transformation project
+│   ├── ny_taxi_rides/
+│   │   ├── models/                   # staging / intermediate / analytics
+│   │   ├── seeds/
+│   │   ├── macros/
+│   │   ├── tests/
+│   │   └── dbt_project.yml
+│   │
+│   ├── profiles.yml                  # dbt connection profiles
+│   ├── Dockerfile
+│   └── docker-compose.yaml
+│
+├── metabase/                         # BI dashboard container
+│   ├── docker-compose.yaml
+│   └── pg_data/                      # Metabase metadata database volume
+│
+├── data/                             # Local data storage
+│   ├── raw/                          # downloaded NYC taxi parquet files
+│   └── warehouse/                    # PostgreSQL volume mount
+│
+└── screenshots/                      # Architecture / DAG / Lineage / Dashboard images
+```
 
 ---
 
