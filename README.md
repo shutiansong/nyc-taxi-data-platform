@@ -40,7 +40,9 @@ A production-grade **batch ELT data platform** for NYC Taxi trip datasets, empha
 
 # Architecture Overview
 
-![Architecture](screenshots/pipeline_architecture.png)
+<p align="center">
+  <img src="screenshots/pipeline_architecture.png" width="850">
+</p>
 
 **Pipeline Flow:**
 
@@ -71,6 +73,25 @@ All components run as isolated **Docker containers** orchestrated via **Docker C
 3. **PostgreSQL Warehouse**: stores base and quarantine tables; partition + truncate + rewrite for rerun-safe snapshots; metadata logging  
 4. **dbt Transformation Layer**: staging → intermediate → analytics; deduplication, metrics, DQ signals, dimensional modeling  
 5. **Metabase Dashboards**: trip counts, revenue, vendor performance, payment mix, pickup-zone spatial analysis  
+
+---
+
+# Pipeline Orchestration (Airflow)
+
+Airflow orchestrates the full batch pipeline, coordinating ingestion, transformation, and validation tasks.
+
+Key responsibilities include:
+
+- batch scheduling  
+- dependency management  
+- safe pipeline reruns  
+- operational monitoring  
+
+Example DAG structure:
+
+<p align="center">
+  <img src="screenshots/airflow_dag.png" width="850">
+</p>
 
 ---
 
@@ -128,7 +149,9 @@ dbt builds analytics-ready models on top of Spark-processed data.
 - Partition-aware dbt tests improve performance (~15 → 8–9 min)  
 - Extend storage reduced from ~100GB → <50MB  
 
-![dbt Lineage](screenshots/dbt_lineage.png)
+<p align="center">
+  <img src="screenshots/dbt_lineage.png" width="850">
+</p>
 
 ---
 
@@ -141,7 +164,9 @@ Dashboards provide:
 - Payment type distribution and tip rates  
 - Pickup-zone spatial analytics  
 
-![Metabase Dashboard](screenshots/metabase_dashboard.png)
+<p align="center">
+  <img src="screenshots/metabase_dashboard.png" width="850">
+</p>
 
 ---
 
