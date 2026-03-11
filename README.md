@@ -25,16 +25,16 @@ A production-grade **batch ELT data platform** for NYC Taxi trip datasets, empha
 
 # Table of Contents
 
-1. Architecture Overview  
-2. Technology Stack  
-3. Pipeline Orchestration (Airflow)  
-4. Raw ELT Layer (Spark)  
-5. dbt Transformation Layer  
-6. Analytics Dashboards  
-7. Batch Semantics & Determinism  
-8. Design Principles  
-9. Lessons Learned  
-10. Summary  
+1. [Architecture Overview](#architecture-overview)
+2. [Technology Stack](#technology-stack)
+3. [Pipeline Orchestration (Airflow)](#pipeline-orchestration-airflow)
+4. [Raw ELT Layer (Spark)](#raw-elt-layer-spark)
+5. [dbt Transformation Layer](#dbt-transformation-layer)
+6. [Analytics Dashboards](#analytics-dashboards-metabase)
+7. [Batch Semantics & Determinism](#batch-semantics--determinism)
+8. [Design Principles](#design-principles)
+9. [Lessons Learned](#lessons-learned)
+10. [Summary](#summary)
 
 ---
 
@@ -215,5 +215,7 @@ Dashboards provide:
 
 # Summary
 
-This project demonstrates how to build a **production-style batch ELT data platform** using modern data engineering tools.  
-The pipeline emphasizes **deterministic processing, explicit data quality signaling, and safe rerun capabilities**, while remaining fully **containerized and reproducible** for local deployment.
+- Enterprise-grade **safe, re-runnable batch ELT pipeline**
+- Treats **data quality as analytical output**
+- Fully **containerized stack**: Airflow, Spark, dbt, PostgreSQL, Metabase
+- Optimized for reproducibility, modularity, and performance
