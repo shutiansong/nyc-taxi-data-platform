@@ -1,8 +1,31 @@
 # NYC Taxi Data Platform
 
-A production-style **batch ELT data platform** built to process NYC Taxi trip datasets using a containerized data stack.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) 
+[![Repo Size](https://img.shields.io/github/repo-size/shutiansong/nyc-taxi-data-platform)](https://github.com/shutiansong/nyc-taxi-data-platform)
+[![Last Commit](https://img.shields.io/github/last-commit/shutiansong/nyc-taxi-data-platform)](https://github.com/shutiansong/nyc-taxi-data-platform)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Airflow](https://img.shields.io/badge/Airflow-017CEE?logo=apache-airflow&logoColor=white)](https://airflow.apache.org/)
+[![Spark](https://img.shields.io/badge/Spark-E25A1C?logo=apache-spark&logoColor=white)](https://spark.apache.org/)
+[![dbt](https://img.shields.io/badge/dbt-FF0000?logo=dbt-labs&logoColor=white)](https://www.getdbt.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Metabase](https://img.shields.io/badge/Metabase-0052CC?logo=metabase&logoColor=white)](https://www.metabase.com/)
 
-The project focuses on **deterministic batch processing, explicit data quality signaling, and safe pipeline reruns**, simulating operational patterns commonly used in real-world data platforms.
+A production-grade **batch ELT data platform** for NYC Taxi trip datasets, emphasizing **deterministic batch processing, explicit data quality signaling, and safe reruns**. Fully **containerized** for reproducibility and modular orchestration.
+
+---
+
+# Table of Contents
+
+1. [Architecture Overview](#architecture-overview)  
+2. [Technology Stack](#technology-stack)  
+3. [Pipeline Flow](#pipeline-flow)  
+4. [Raw ELT Layer (Spark)](#raw-elt-layer-spark)  
+5. [dbt Transformation Layer](#dbt-transformation-layer)  
+6. [Analytics Dashboards](#analytics-dashboards-metabase)  
+7. [Batch Semantics & Determinism](#batch-semantics--determinism)  
+8. [Design Principles](#design-principles)  
+9. [Lessons Learned](#lessons-learned)  
+10. [Summary](#summary)
 
 ---
 
@@ -10,155 +33,56 @@ The project focuses on **deterministic batch processing, explicit data quality s
 
 ![Architecture](screenshots/pipeline_architecture.png)
 
-Pipeline flow:
+**Pipeline Flow:**
 
-Raw Parquet Data (Monthly)  
-↓  
-Spark Batch ELT (DQ validation + classification)  
-↓  
-PostgreSQL Warehouse  
-↓  
-dbt Transformation Layer  
-↓  
-Metabase Analytics Dashboards  
+Raw Parquet Data (Monthly) → Spark Batch ELT → PostgreSQL Warehouse → dbt Transformation → Metabase Dashboards
 
-All components run as isolated containers orchestrated with Docker Compose.
+All components run as isolated **Docker containers** orchestrated via **Docker Compose**, ensuring reproducibility, modularity, and safe local deployment.
 
 ---
 
 # Technology Stack
 
 | Layer | Technology |
-|------|------|
-| Orchestration | Airflow |
+|-------|------------|
+| Orchestration | Airflow (PythonOperator, BashOperator, DockerOperator) |
 | Processing | Spark (PySpark) |
 | Warehouse | PostgreSQL |
 | Transformation | dbt |
 | BI / Visualization | Metabase |
 | Infrastructure | Docker Compose |
-| Data Source | NYC Yellow Taxi Trip Data |
+| Data Source | NYC Yellow Taxi Trip Data (monthly Parquet) |
 
 ---
 
-# Key Features
+# Pipeline Flow
 
-- Deterministic **monthly batch processing (batch-id = YYYY-MM)**
-- **Safe reruns and historical backfills**
-- Explicit **data quality classification** (clean / suspicious / critical)
-- **Quarantine tables** preserving anomalous records instead of silent filtering
-- **Partition-aware dbt validation** for scalable testing
-- **Operational metadata logging** for ingestion observability
-- Fully **containerized local data platform**
-
----
-
-# Pipeline Orchestration
-
-The pipeline is orchestrated using **Airflow**, coordinating ingestion, validation, transformation, and analytics workflows.
-
-Example DAG structure:
-
-![Airflow DAG](screenshots/airflow_dag.png)
-
----
-
-# dbt Transformation Lineage
-
-The transformation layer follows a **staging → intermediate → analytics** modeling architecture.
-
-Key transformations include:
-
-- trip deduplication
-- derived metrics
-- data quality signals
-- dimensional modeling
-- aggregated analytics
-
-![dbt Lineage](screenshots/dbt_lineage.png)
-
----
-
-# Analytics Dashboards
-
-Dashboards built with **Metabase** provide insights including:
-
-- trip volume and revenue
-- vendor performance trends
-- payment type distribution
-- pickup zone spatial analytics
-
-![Metabase Dashboard](screenshots/metabase_dashboard.png)
-
----
-
-# Batch Semantics & Determinism
-
-The pipeline processes data in **monthly batches (YYYY-MM)**.
-
-Each batch is:
-
-- ingested and validated by Spark
-- persisted into warehouse tables
-- transformed and tested via dbt
-
-### Safe reruns
-
-Pipeline reruns fully replace the batch snapshot, preventing partial updates and ensuring deterministic results.
-
-### Late / Early Trip Handling
-
-Trips outside the expected batch window are classified as:
-
-| Category | Handling |
-|------|------|
-| Clean | Base table |
-| Suspicious | Base + Quarantine |
-| Critical | Quarantine only |
-
-This design preserves anomalous records for auditability.
+1. **Raw Parquet Data (Monthly)**: ingested from source  
+2. **Spark Batch ELT**: deterministic ingestion, DQ validation, classification into clean / suspicious / critical  
+3. **PostgreSQL Warehouse**: stores base and quarantine tables; partition + truncate + rewrite for rerun-safe snapshots; metadata logging  
+4. **dbt Transformation Layer**: staging → intermediate → analytics; deduplication, metrics, DQ signals, dimensional modeling  
+5. **Metabase Dashboards**: trip counts, revenue, vendor performance, payment mix, pickup-zone spatial analysis  
 
 ---
 
 # Raw ELT Layer (Spark)
 
-The ingestion layer focuses on:
+The Spark layer handles:
 
-- deterministic batch processing
-- centralized data quality validation
-- rerun-safe loading
-- ingestion observability
+- Deterministic ingestion scoped by batch-id (YYYY-MM)  
+- Centralized data quality validation: time, pricing, passenger anomalies  
+- Classification: clean → base, suspicious → base + quarantine, critical → quarantine  
 
-### Processing Steps
+**Rerun-safe loading strategy:**
 
-1. Download monthly Parquet files
-2. Spark reads and validates records
-3. Data quality rules classify trips
-4. Results written to PostgreSQL warehouse tables
+- `partition + truncate + rewrite` prevents table bloat and guarantees deterministic batch snapshots  
 
-### Rerun-safe loading strategy
+**Metadata & Observability:**
 
-Raw tables use:
-
-partition + truncate + rewrite
-
-This avoids table bloat during reruns and guarantees deterministic batch snapshots.
-
----
-
-# Metadata & Observability
-
-Operational metadata is stored in:
-
-metadata.batch_ingestion_stats
-
-Captured metrics include:
-
-- input row count
-- base / quarantine row counts
-- anomaly distribution
-- pickup timestamp ranges
-
-These metrics enable auditing, debugging, and operational monitoring.
+- Input / output row counts (base/quarantine)  
+- DQ issue distribution  
+- Pickup timestamp ranges  
+- Stored in `metadata.batch_ingestion_stats` for auditing and SLA monitoring  
 
 ---
 
@@ -168,84 +92,93 @@ dbt builds analytics-ready models on top of Spark-processed data.
 
 ### Staging Layer
 
-- standardized column naming
-- stable interface over raw tables
+- Standardizes column naming  
+- Provides stable interface over raw tables  
 
 ### Intermediate Layer
 
-Includes transformations such as:
-
-- trip deduplication
-- metric derivation
-- data quality signals
-
-Example models:
-
-int_ny_taxi_trips_dedup
-int_ny_taxi_trips_metrics
-int_ny_taxi_trips_dq
+- Trip deduplication  
+- Metric derivation  
+- Data quality signals  
 
 ### Dimension Tables
 
-dim_vendor
-dim_rate_code
-dim_payment_type
-dim_zones
+- dim_vendor, dim_rate_code, dim_payment_type, dim_zones  
 
 ### Fact Tables
 
-fct_trips_wide
-fct_trips_daily_vendor
-fct_trips_daily_pickup_zone
-fct_trips_daily_payment_type
+- fct_trips_wide  
+- fct_trips_daily_vendor  
+- fct_trips_daily_pickup_zone  
+- fct_trips_daily_payment_type  
+
+**Incremental & Partitioning Strategy:**
+
+- Incremental materialization scoped by `pickup_month`  
+- Only affects current partition for reruns  
+- Partition-aware dbt tests improve performance (~15 → 8–9 min)  
+- Extend storage reduced from ~100GB → <50MB  
+
+![dbt Lineage](screenshots/dbt_lineage.png)
 
 ---
 
-# Incremental Strategy
+# Analytics Dashboards (Metabase)
 
-dbt models use **incremental materialization with partition filtering**.
+Dashboards provide:
 
-Benefits:
+- Trip volume and revenue  
+- Vendor performance trends  
+- Payment type distribution and tip rates  
+- Pickup-zone spatial analytics  
 
-- reruns only affect target partitions
-- avoids full-table rebuilds
-- improves validation performance
-
-Example improvement:
-
-dbt test runtime
-15 minutes → 8–9 minutes
-
+![Metabase Dashboard](screenshots/metabase_dashboard.png)
 
 ---
 
-# Performance Optimizations
+# Batch Semantics & Determinism
 
-Key optimizations implemented in the pipeline:
+- Data processed in **monthly batches (YYYY-MM)**  
+- Spark ingestion → warehouse persistence → dbt transformation  
 
-- Partition-aware dbt tests prevent full-table scans
-- Raw ingestion uses truncate + rewrite to avoid table bloat
-- Containerized tmp usage prevents disk accumulation
-- PostgreSQL extend storage reduced from ~100GB to <50MB
+### Safe Reruns
+
+- Full snapshot replacement  
+- Partial failures do not corrupt historical data  
+
+### Late / Early Trip Handling
+
+| Category | Handling |
+|----------|----------|
+| Clean | Base table |
+| Suspicious | Base + Quarantine |
+| Critical | Quarantine only |
 
 ---
 
 # Design Principles
 
 | Principle | Implementation |
-|------|------|
+|-----------|----------------|
 | Correctness over throughput | Batch processing (~15 min per batch) |
 | Deterministic ELT snapshots | Partition + truncate + rewrite |
-| Explicit data quality signaling | DQ flags instead of filtering |
-| Layer separation | Spark ingestion vs dbt analytics |
+| Explicit DQ signaling | DQ flags instead of filtering |
+| Separation of layers | Spark ingestion vs dbt analytics |
 
 ---
 
 # Lessons Learned
 
-Key engineering insights from building this project:
+- Late-arriving data requires explicit classification  
+- Partitioning improves rerun efficiency and storage management  
+- Operational metadata is critical for debugging  
+- Clear separation of ingestion and transformation improves maintainability  
 
-- Late-arriving data requires explicit classification strategies
-- Partitioning dramatically improves rerun performance
-- Observability is critical for debugging batch pipelines
-- Separating ingestion and transformation layers improves maintainability
+---
+
+# Summary
+
+- Enterprise-grade **safe, re-runnable batch ELT pipeline**  
+- Treats **data quality as analytical output**  
+- Fully **containerized stack**: Airflow, Spark, dbt, PostgreSQL, Metabase  
+- Optimized for reproducibility, modularity, and performance
