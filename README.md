@@ -4,11 +4,11 @@
 [![Repo Size](https://img.shields.io/github/repo-size/shutiansong/nyc-taxi-data-platform)](https://github.com/shutiansong/nyc-taxi-data-platform)
 [![Last Commit](https://img.shields.io/github/last-commit/shutiansong/nyc-taxi-data-platform)](https://github.com/shutiansong/nyc-taxi-data-platform)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Airflow](https://img.shields.io/badge/Airflow-017CEE?logo=apache-airflow&logoColor=white)](https://airflow.apache.org/)
-[![Spark](https://img.shields.io/badge/Spark-E25A1C?logo=apache-spark&logoColor=white)](https://spark.apache.org/)
-[![dbt](https://img.shields.io/badge/dbt-FF0000?logo=dbt&logoColor=white)](https://www.getdbt.com/)
+[![Airflow](https://img.shields.io/badge/Airflow-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
+[![Spark](https://img.shields.io/badge/Spark-E25A1C?logo=apachespark&logoColor=white)](https://spark.apache.org/)
+[![dbt](https://img.shields.io/badge/dbt-FF694B?logo=dbt&logoColor=white)](https://www.getdbt.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Metabase](https://img.shields.io/badge/Metabase-0052CC?logo=metabase&logoColor=white)](https://www.metabase.com/)
+[![Metabase](https://img.shields.io/badge/Metabase-509EE3?logo=metabase&logoColor=white)](https://www.metabase.com/)
 
 A production-grade **batch ELT data platform** for NYC Taxi trip datasets, emphasizing **deterministic batch processing, explicit data quality signaling, and safe reruns**. Fully **containerized** for reproducibility and modular orchestration.
 
