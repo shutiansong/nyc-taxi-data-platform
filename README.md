@@ -11,13 +11,13 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Metabase](https://img.shields.io/badge/Metabase-509EE3?logo=metabase&logoColor=white)](https://www.metabase.com/)
 
-[![Pipeline](https://img.shields.io/badge/Pipeline-Batch-blue)]
-[![ELT](https://img.shields.io/badge/ELT-Idempotent-orange)]
-[![Data Quality](https://img.shields.io/badge/Data%20Quality-Validated-green)]
-[![Processing](https://img.shields.io/badge/Processing-Partitioned-purple)]
-[![Warehouse](https://img.shields.io/badge/Warehouse-PostgreSQL-blue)]
-[![Infrastructure](https://img.shields.io/badge/Infra-Dockerized-2496ED)]
-[![Processing Model](https://img.shields.io/badge/Processing-Deterministic-red)]
+![Pipeline](https://img.shields.io/badge/Pipeline-Batch-blue)
+![ELT](https://img.shields.io/badge/ELT-Idempotent-orange)
+![Data Quality](https://img.shields.io/badge/Data%20Quality-Validated-green)
+![Processing](https://img.shields.io/badge/Processing-Partitioned-purple)
+![Warehouse](https://img.shields.io/badge/Warehouse-PostgreSQL-blue)
+![Infrastructure](https://img.shields.io/badge/Infra-Dockerized-2496ED)
+![Processing Model](https://img.shields.io/badge/Processing-Deterministic-red)
 
 A production-grade **batch ELT data platform** for NYC Taxi trip datasets, emphasizing **deterministic batch processing, explicit data quality signaling, and safe reruns**. Fully **containerized** for reproducibility and modular orchestration.
 
