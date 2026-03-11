@@ -1,4 +1,4 @@
-# NYC Taxi Data Platform
+# NYC Taxi Batch ELT Platform
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) 
 [![Repo Size](https://img.shields.io/github/repo-size/shutiansong/nyc-taxi-data-platform)](https://github.com/shutiansong/nyc-taxi-data-platform)
@@ -19,7 +19,7 @@
 ![Infrastructure](https://img.shields.io/badge/Infra-Dockerized-2496ED)
 ![Processing Model](https://img.shields.io/badge/Processing-Deterministic-red)
 
-A production-style **batch ELT data platform** for NYC Taxi trip datasets, emphasizing **deterministic batch processing, explicit data quality signaling, and safe reruns**. Fully **containerized** for reproducibility and modular orchestration.
+A production-style **batch ELT data platform built around the NYC Taxi trip dataset**, emphasizing **deterministic batch processing, explicit data quality signaling, and safe reruns**. Fully **containerized** for reproducibility and modular orchestration.
 
 ---
 
@@ -28,11 +28,11 @@ A production-style **batch ELT data platform** for NYC Taxi trip datasets, empha
 1. [Architecture Overview](#architecture-overview)
 2. [Technology Stack](#technology-stack)
 3. [Repository Structure](#repository-structure)
-4. [Pipeline Orchestration (Airflow)](#pipeline-orchestration-airflow)
-5. [Raw ELT Layer (Spark)](#raw-elt-layer-spark)
-6. [dbt Transformation Layer](#dbt-transformation-layer)
-7. [Analytics Dashboards](#analytics-dashboards-metabase)
-8. [Batch Semantics & Determinism](#batch-semantics--determinism)
+4. [Batch Semantics & Determinism](#batch-semantics--determinism)
+5. [Pipeline Orchestration (Airflow)](#pipeline-orchestration-airflow)
+6. [Raw ELT Layer (Spark)](#raw-elt-layer-spark)
+7. [dbt Transformation Layer](#dbt-transformation-layer)
+8. [Analytics Dashboards](#analytics-dashboards-metabase)
 9. [Design Principles](#design-principles)
 10. [Lessons Learned](#lessons-learned)
 11. [Summary](#summary)
@@ -132,6 +132,25 @@ nyc-taxi-data-platform
 
 ---
 
+# Batch Semantics & Determinism
+
+- Data processed in **monthly batches (YYYY-MM)**  
+
+### Safe Reruns
+
+- Full snapshot replacement  
+- Partial failures do not corrupt historical data  
+
+### Late / Early Trip Handling
+
+| Category | Handling |
+|----------|----------|
+| Clean | Base table |
+| Suspicious | Base + Quarantine |
+| Critical | Quarantine only |
+
+---
+
 # Pipeline Orchestration (Airflow)
 
 Airflow orchestrates the full batch pipeline, coordinating ingestion, transformation, and validation tasks.
@@ -175,10 +194,10 @@ Each ingestion batch records operational metadata for auditing and monitoring:
 
 These metrics are stored in:
 
-metadata.batch_ingestion_stats
+`metadata.batch_ingestion_stats`
 
 
-This enables batch-level auditing, anomaly detection, and operational monitoring.
+This enables batch-level auditing, anomaly detection, operational monitoring, and safe pipeline reruns.
 
 ---
 
@@ -239,26 +258,6 @@ Dashboards provide:
 
 ---
 
-# Batch Semantics & Determinism
-
-- Data processed in **monthly batches (YYYY-MM)**  
-- Spark ingestion → warehouse persistence → dbt transformation  
-
-### Safe Reruns
-
-- Full snapshot replacement  
-- Partial failures do not corrupt historical data  
-
-### Late / Early Trip Handling
-
-| Category | Handling |
-|----------|----------|
-| Clean | Base table |
-| Suspicious | Base + Quarantine |
-| Critical | Quarantine only |
-
----
-
 # Design Principles
 
 | Principle | Implementation |
@@ -281,7 +280,7 @@ Dashboards provide:
 
 # Summary
 
-- Enterprise-grade **safe, re-runnable batch ELT pipeline**
+- Production-style **safe, re-runnable batch ELT pipeline**
 - Treats **data quality as analytical output**
 - Fully **containerized stack**: Airflow, Spark, dbt, PostgreSQL, Metabase
 - Optimized for reproducibility, modularity, and performance
