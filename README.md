@@ -155,13 +155,13 @@ Example DAG structure:
 
 The Spark layer handles:
 
-- Deterministic ingestion scoped by batch-id (YYYY-MM)  
+- Monthly batch ingestion of raw Parquet datasets  
 - Centralized data quality validation: time, pricing, passenger anomalies  
 - Classification: clean → base, suspicious → base + quarantine, critical → quarantine  
 
-**Rerun-safe loading strategy**
+**Loading strategy**
 
-- `partition + truncate + rewrite` prevents table bloat and guarantees deterministic batch snapshots  
+- `partition + truncate + rewrite` ensures safe partition refreshes while preventing table bloat
 
 ### Batch Observability
 
