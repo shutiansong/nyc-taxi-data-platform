@@ -25,16 +25,16 @@ A production-grade **batch ELT data platform** for NYC Taxi trip datasets, empha
 
 # Table of Contents
 
-1. [Architecture Overview](#architecture-overview)  
-2. [Technology Stack](#technology-stack)  
-3. [Pipeline Orchestration (Airflow)](#pipeline-orchestration-airflow)  
-4. [Raw ELT Layer (Spark)](#raw-elt-layer-spark)  
-5. [dbt Transformation Layer](#dbt-transformation-layer)  
-6. [Analytics Dashboards](#analytics-dashboards-metabase)  
-7. [Batch Semantics & Determinism](#batch-semantics--determinism)  
-8. [Design Principles](#design-principles)  
-9. [Lessons Learned](#lessons-learned)  
-10. [Summary](#summary)
+1. Architecture Overview  
+2. Technology Stack  
+3. Pipeline Orchestration (Airflow)  
+4. Raw ELT Layer (Spark)  
+5. dbt Transformation Layer  
+6. Analytics Dashboards  
+7. Batch Semantics & Determinism  
+8. Design Principles  
+9. Lessons Learned  
+10. Summary  
 
 ---
 
@@ -44,7 +44,7 @@ A production-grade **batch ELT data platform** for NYC Taxi trip datasets, empha
   <img src="screenshots/pipeline_architecture.png" width="850">
 </p>
 
-**Pipeline Flow:**
+**Pipeline Flow**
 
 Raw Parquet Data (Monthly) → Spark Batch ELT → PostgreSQL Warehouse → dbt Transformation → Metabase Dashboards
 
@@ -55,14 +55,14 @@ All components run as isolated **Docker containers** orchestrated via **Docker C
 # Technology Stack
 
 | Layer | Technology |
-|-------|------------|
-| Orchestration | Airflow (PythonOperator, BashOperator, DockerOperator) |
-| Processing | Spark (PySpark) |
+|------|------------|
+| Orchestration | Apache Airflow |
+| Processing | Apache Spark (PySpark) |
 | Warehouse | PostgreSQL |
 | Transformation | dbt |
 | BI / Visualization | Metabase |
 | Infrastructure | Docker Compose |
-| Data Source | NYC Yellow Taxi Trip Data (monthly Parquet) |
+| Data Source | NYC Yellow Taxi Trip Data (2024 full-year dataset, monthly Parquet) |
 
 ---
 
@@ -93,16 +93,26 @@ The Spark layer handles:
 - Centralized data quality validation: time, pricing, passenger anomalies  
 - Classification: clean → base, suspicious → base + quarantine, critical → quarantine  
 
-**Rerun-safe loading strategy:**
+**Rerun-safe loading strategy**
 
 - `partition + truncate + rewrite` prevents table bloat and guarantees deterministic batch snapshots  
 
-**Metadata & Observability:**
+### Batch Observability
 
-- Input / output row counts (base/quarantine)  
+Each ingestion batch records operational metadata for auditing and monitoring:
+
+- input row count  
+- base table output rows  
+- quarantine table rows  
 - DQ issue distribution  
-- Pickup timestamp ranges  
-- Stored in `metadata.batch_ingestion_stats` for auditing and SLA monitoring  
+- pickup timestamp ranges  
+
+These metrics are stored in:
+
+metadata.batch_ingestion_stats
+
+
+This enables batch-level auditing, anomaly detection, and operational monitoring.
 
 ---
 
@@ -123,7 +133,10 @@ dbt builds analytics-ready models on top of Spark-processed data.
 
 ### Dimension Tables
 
-- dim_vendor, dim_rate_code, dim_payment_type, dim_zones  
+- dim_vendor  
+- dim_rate_code  
+- dim_payment_type  
+- dim_zones  
 
 ### Fact Tables
 
@@ -132,12 +145,12 @@ dbt builds analytics-ready models on top of Spark-processed data.
 - fct_trips_daily_pickup_zone  
 - fct_trips_daily_payment_type  
 
-**Incremental & Partitioning Strategy:**
+**Incremental & Partitioning Strategy**
 
 - Incremental materialization scoped by `pickup_month`  
 - Only affects current partition for reruns  
 - Partition-aware dbt tests improve performance (~15 → 8–9 min)  
-- Extend storage reduced from ~100GB → <50MB  
+- External storage reduced from ~100GB → <50MB  
 
 <p align="center">
   <img src="screenshots/dbt_lineage.png" width="850">
@@ -202,7 +215,5 @@ Dashboards provide:
 
 # Summary
 
-- Enterprise-grade **safe, re-runnable batch ELT pipeline**  
-- Treats **data quality as analytical output**  
-- Fully **containerized stack**: Airflow, Spark, dbt, PostgreSQL, Metabase  
-- Optimized for reproducibility, modularity, and performance
+This project demonstrates how to build a **production-style batch ELT data platform** using modern data engineering tools.  
+The pipeline emphasizes **deterministic processing, explicit data quality signaling, and safe rerun capabilities**, while remaining fully **containerized and reproducible** for local deployment.
