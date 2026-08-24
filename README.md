@@ -1,4 +1,3 @@
-````markdown
 # NYC Taxi Batch ELT Platform V2
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -88,7 +87,6 @@ NYC Taxi Monthly Parquet
                   │
                   ▼
               Metabase
-````
 
 The V2 architecture separates **object storage, data processing, analytical storage, and BI**:
 
