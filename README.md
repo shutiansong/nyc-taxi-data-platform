@@ -64,7 +64,7 @@ NYC Taxi Monthly Parquet
           │
           ▼
        Postgres
-   Base / Quarantine
+   Base / Quarantine / Metadata
           │
           ▼
           dbt
