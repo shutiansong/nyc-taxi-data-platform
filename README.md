@@ -21,7 +21,7 @@
 ![Infrastructure](https://img.shields.io/badge/Infra-Dockerized-2496ED)
 ![Processing Model](https://img.shields.io/badge/Processing-Deterministic-red)
 
-A production-style **batch ELT data platform built around the NYC Taxi trip dataset**, evolved from a PostgreSQL-based V1 architecture into a storage-separated V2 architecture using object storage and an OLAP warehouse.
+A production-style **batch ELT data platform built around the NYC Taxi trip dataset**, evolved from a PostgreSQL-centered V1 pipeline into a storage-separated V2 architecture using object storage and an OLAP warehouse.
 
 The platform focuses on **deterministic batch processing, data quality handling, idempotent reruns, operational metadata, and analytical scalability**.
 
@@ -31,54 +31,52 @@ The project is fully containerized with **Docker Compose**. The public repositor
 
 # Table of Contents
 
-1. [Architecture Overview](#architecture-overview)
-2. [V1 → V2 Evolution](#v1--v2-evolution)
-3. [Technology Stack](#technology-stack)
-4. [Repository Structure](#repository-structure)
-5. [Batch Processing](#batch-processing)
-6. [Data Quality](#data-quality)
-7. [Analytical Modeling](#analytical-modeling)
-8. [Operational Metadata](#operational-metadata)
-9. [Performance](#performance)
-10. [Lessons Learned](#lessons-learned)
-11. [Summary](#summary)
+1. [Architecture & Evolution](#architecture--evolution)
+2. [Technology Stack](#technology-stack)
+3. [Repository Structure](#repository-structure)
+4. [Batch Processing & Data Quality](#batch-processing--data-quality)
+5. [Analytical Modeling](#analytical-modeling)
+6. [Operational Metadata](#operational-metadata)
+7. [Performance](#performance)
+8. [Lessons Learned](#lessons-learned)
+9. [Summary](#summary)
 
 ---
 
-# Architecture Overview
+# Architecture & Evolution
 
-<p align="center">
-  <img src="screenshots/v2_pipeline_architecture.png" width="900">
-</p>
+The project evolved from a PostgreSQL-centered V1 batch ELT pipeline into a storage-separated V2 architecture.
 
-The V2 pipeline follows a storage-separated batch ELT architecture:
+In V1, PostgreSQL was used as both the primary data store and analytical warehouse. The V1 implementation was first optimized for rerun behavior, dbt test performance, and PostgreSQL storage pressure.
+
+V2 then separated durable data storage from analytical serving. MinIO stores Parquet datasets, StarRocks provides the analytical warehouse layer, and Postgres is retained for operational metadata.
+
+## V2 Architecture
 
 ```text
-    NYC Taxi Monthly Parquet
-              │
-              ▼
-            MinIO
-             Raw
-              │
-              ▼
-        Spark Batch ELT
-              │
-         ┌────┴─────────────┐
-         │                  │
-         ▼                  ▼
-       MinIO             Postgres
-   Base/Quarantine      Metadata
-         │
-         ▼
-   StarRocks External Tables
-         │
-         ▼
-        dbt
-         │
-         ▼
+NYC Taxi Monthly Parquet
+          │
+          ▼
+       MinIO Raw
+          │
+          ▼
+    Spark Batch ELT
+       │       │
+       │       └──────────────► Postgres
+       │                         Metadata
+       ▼
+ MinIO Base / Quarantine
+          │
+          ▼
+ StarRocks External Tables
+          │
+          ▼
+         dbt
+          │
+          ▼
    Analytics Models
-         │
-         ▼
+          │
+          ▼
       Metabase
 ```
 
@@ -86,61 +84,16 @@ The processing flow is:
 
 **Parquet → MinIO Raw → Spark → MinIO Base/Quarantine + Postgres Metadata → StarRocks External Tables → dbt → Analytics → Metabase**
 
-MinIO provides the durable Parquet storage layer, while StarRocks serves the analytical workload. Postgres is used separately for operational metadata.
+The V2 architecture separates durable Parquet storage from analytical serving while keeping the existing batch semantics and analytical models.
 
----
-
-# V1 → V2 Evolution
-
-The project started with a PostgreSQL-centered V1 architecture:
-
-```text
-    Monthly Parquet
-          │
-          ▼
-       Spark ELT
-          │
-          ▼
-       Postgres
-          │
-          ▼
-          dbt
-          │
-          ▼
-      Analytics
-          │
-          ▼
-       Metabase
-```
-
-V1 provided a simple and reliable batch ELT workflow, but PostgreSQL was responsible for both persistent data storage and analytical workloads.
-
-Before moving to V2, the V1 pipeline was optimized around rerun behavior, PostgreSQL table bloat, dbt test performance, and temporary storage pressure.
-
-V2 separates durable storage from analytical serving:
-
-```text
-    Raw Parquet
-         │
-         ▼
-        MinIO
-         │
-     ┌───┴────────────┐
-     ▼                ▼
-    Base         Quarantine
-     │                │
-     └───────┬────────┘
-             ▼
-   StarRocks External Tables
-             │
-             ▼
-            dbt
-             │
-             ▼
-        Analytics
-```
-
-The V2 redesign reduced end-to-end pipeline runtime from approximately **15 minutes in V1 to approximately 3 minutes in V2**, while retaining the existing batch semantics, data quality handling, and analytical models.
+| | V1 | V2 |
+|---|---|---|
+| Data Storage | Postgres | MinIO / Parquet |
+| Analytical Warehouse | Postgres | StarRocks |
+| Operational Metadata | Postgres | Postgres |
+| Transformation | dbt | dbt |
+| BI | Metabase | Metabase |
+| End-to-End Runtime | ~15 min | ~3 min |
 
 The original V1 documentation is preserved under `docs/v1/README.md`.
 
@@ -165,74 +118,80 @@ The original V1 documentation is preserved under `docs/v1/README.md`.
 
 # Repository Structure
 
-The V2 project is organized as a set of independently containerized services.
+The V2 project is organized as independently containerized services.
 
-    project-root/
-    │
-    ├── airflow/
-    │   ├── Dockerfile
-    │   ├── docker-compose.yaml
-    │   ├── config/
-    │   ├── dags/
-    │   ├── logs/
-    │   ├── plugins/
-    │   ├── requirements.txt
-    │   └── sql/
-    │
-    ├── spark/
-    │   ├── Dockerfile
-    │   ├── docker-compose.yaml
-    │   ├── conf/
-    │   ├── jobs/
-    │   └── requirements.txt
-    │
-    ├── minio/
-    │   ├── docker-compose.yaml
-    │   └── data/
-    │
-    ├── postgres/
-    │   ├── docker-compose.yaml
-    │   └── ddl/
-    │
-    ├── starrocks/
-    │   ├── docker-compose.yaml
-    │   ├── ddl/
-    │   └── data/
-    │
-    ├── dbt/
-    │   ├── Dockerfile
-    │   ├── docker-compose.yaml
-    │   ├── profiles.yml
-    │   ├── logs/
-    │   ├── ny_taxi_rides/
-    │   └── ny_taxi_rides_v2/
-    │
-    └── metabase/
-        ├── docker-compose.yaml
-        ├── plugins/
-        └── pg_data/
+```text
+project-root/
+│
+├── airflow/
+│   ├── Dockerfile
+│   ├── config/
+│   ├── dags/
+│   ├── docker-compose.yaml
+│   ├── logs/
+│   ├── plugins/
+│   ├── requirements.txt
+│   └── sql/
+│
+├── spark/
+│   ├── Dockerfile
+│   ├── conf/
+│   ├── docker-compose.yaml
+│   ├── jobs/
+│   └── requirements.txt
+│
+├── minio/
+│   ├── data/
+│   └── docker-compose.yaml
+│
+├── postgres/
+│   ├── ddl/
+│   └── docker-compose.yaml
+│
+├── starrocks/
+│   ├── data/
+│   ├── ddl/
+│   └── docker-compose.yaml
+│
+├── dbt/
+│   ├── Dockerfile
+│   ├── docker-compose.yaml
+│   ├── logs/
+│   ├── ny_taxi_rides/
+│   ├── ny_taxi_rides_v2/
+│   └── profiles.yml
+│
+└── metabase/
+    ├── docker-compose.yaml
+    ├── pg_data/
+    └── plugins/
+```
 
 Airflow, Spark, and dbt each have their own Dockerfile and Docker Compose configuration. The remaining services are defined through their respective Docker Compose configurations.
 
 The public GitHub repository focuses on **architecture, documentation, configuration references, and workflow screenshots** rather than exposing the complete implementation code.
 
-The original V1 documentation is retained separately under `docs/v1/README.md`.
+The original V1 documentation remains available separately under `docs/v1/README.md`.
 
 ---
 
-# Batch Processing
+# Batch Processing & Data Quality
 
 The pipeline processes NYC Taxi data as deterministic monthly batches.
 
-    batch_id = YYYY-MM
+```text
+batch_id = YYYY-MM
+```
 
 For example:
 
-    2024-01
-    2024-02
-    2024-03
-    ...
-    2024-12
+```text
+2024-01
+2024-02
+2024-03
+...
+2024-12
+```
 
 The same `batch_id` represents the same logical processing unit throughout the pipeline.
 
@@ -246,28 +205,13 @@ This provides a consistent basis for:
 
 Raw monthly Parquet files are first written to MinIO:
 
-    s3a://<bucket>/raw/<batch_id>/
+```text
+s3a://<bucket>/raw/<batch_id>/
+```
 
-Spark then reads the corresponding raw batch and writes processed data back to MinIO:
-
-    s3a://<bucket>/base/<batch_id>/
-    s3a://<bucket>/quarantine/<batch_id>/
-
-The processed Base and Quarantine datasets are exposed to StarRocks through external tables.
-
----
-
-# Data Quality
-
-Spark performs data cleansing and quality validation during batch processing.
+Spark reads the corresponding raw batch, performs data cleansing and quality validation, and writes the processed datasets back to MinIO.
 
 Each record is classified into one of three quality states:
-
-    clean
-    suspicious
-    critical
-
-The routing strategy is:
 
 | Quality Status | Destination |
 |----------------|-------------|
@@ -275,9 +219,9 @@ The routing strategy is:
 | Suspicious | Base + Quarantine |
 | Critical | Quarantine |
 
-Instead of silently filtering anomalous records, the pipeline preserves them in the appropriate storage layer and carries the data quality signal downstream.
+Rather than silently filtering anomalous records, the pipeline preserves them in the appropriate storage layer and carries the data quality signal downstream.
 
-This makes data quality issues available for investigation and keeps the processing result traceable and auditable.
+This makes data quality issues traceable and auditable while keeping the processing result available for investigation.
 
 <p align="center">
   <img src="screenshots/airflow_dag.png" width="900">
@@ -291,30 +235,34 @@ StarRocks exposes the processed Parquet datasets stored in MinIO through externa
 
 dbt performs the downstream transformations directly in StarRocks:
 
-    Processed Data
-          │
-          ▼
-       Staging
-          │
-          ▼
-     Intermediate
-          │
-          ▼
-      Analytics
+```text
+Processed Data
+      │
+      ▼
+   Staging
+      │
+      ▼
+ Intermediate
+      │
+      ▼
+  Analytics
+```
 
 The dbt project separates source preparation, business transformations, and analytical models.
 
 The final analytical layer contains models such as:
 
-    dim_vendor
-    dim_rate_code
-    dim_payment_type
-    dim_zones
+```text
+dim_vendor
+dim_rate_code
+dim_payment_type
+dim_zones
 
-    fct_trips_wide
-    fct_trips_daily_vendor
-    fct_trips_daily_pickup_zone
-    fct_trips_daily_payment_type
+fct_trips_wide
+fct_trips_daily_vendor
+fct_trips_daily_pickup_zone
+fct_trips_daily_payment_type
+```
 
 These models support analytical use cases including trip volume, revenue, vendor performance, payment behavior, and pickup-zone analysis.
 
@@ -336,7 +284,9 @@ Operational metadata is stored separately in Postgres rather than in the analyti
 
 The main metadata table is:
 
-    metadata.batch_ingestion_stats
+```text
+metadata.batch_ingestion_stats
+```
 
 It records batch-level information including:
 
@@ -362,7 +312,7 @@ The V2 architecture significantly reduced the end-to-end pipeline runtime:
 | V1 | Spark → Postgres → dbt → Metabase | ~15 min |
 | V2 | MinIO → Spark → MinIO → StarRocks → dbt → Metabase | ~3 min |
 
-The V1 implementation was also optimized before the V2 migration.
+The V1 implementation was optimized before the V2 migration.
 
 Key V1 improvements included:
 
@@ -381,7 +331,7 @@ The V2 redesign then addressed the larger architectural limitation by separating
 
 ## 1. Separate durable storage from analytical serving
 
-Object storage is better suited for retaining processed datasets, while an OLAP warehouse can focus on analytical workloads.
+Object storage is well suited for retaining processed datasets, while an OLAP warehouse can focus on analytical workloads.
 
 This separation reduces coupling between persistent storage and analytical processing.
 
