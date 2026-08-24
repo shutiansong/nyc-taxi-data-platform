@@ -51,6 +51,31 @@ In V1, PostgreSQL was used as both the primary data store and analytical warehou
 
 V2 then separated durable data storage from analytical serving. MinIO stores Parquet datasets, StarRocks provides the analytical warehouse layer, and Postgres is retained for operational metadata.
 
+## V1 Architecture
+
+````text
+NYC Taxi Monthly Parquet
+          │
+          ▼
+       Local Disk
+          │
+          ▼
+      Spark Batch ELT
+          │
+          ▼
+       Postgres
+   Base / Quarantine
+          │
+          ▼
+          dbt
+          │
+          ▼
+   Analytics Models
+          │
+          ▼
+       Metabase
+````
+
 ## V2 Architecture
 
 ```text
