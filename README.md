@@ -8,7 +8,7 @@
 [![Airflow](https://img.shields.io/badge/Airflow-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![Spark](https://img.shields.io/badge/Spark-E25A1C?logo=apachespark&logoColor=white)](https://spark.apache.org/)
 [![MinIO](https://img.shields.io/badge/MinIO-C72E29?logo=minio&logoColor=white)](https://min.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Postgres](https://img.shields.io/badge/Postgres-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![StarRocks](https://img.shields.io/badge/StarRocks-OLAP-blue)](https://www.starrocks.io/)
 [![dbt](https://img.shields.io/badge/dbt-FF694B?logo=dbt&logoColor=white)](https://www.getdbt.com/)
 [![Metabase](https://img.shields.io/badge/Metabase-509EE3?logo=metabase&logoColor=white)](https://www.metabase.com/)
@@ -21,7 +21,7 @@
 ![Infrastructure](https://img.shields.io/badge/Infra-Dockerized-2496ED)
 ![Processing Model](https://img.shields.io/badge/Processing-Deterministic-red)
 
-A production-style **batch ELT data platform built around the NYC Taxi trip dataset**, redesigned from a PostgreSQL-based V1 architecture into an object-storage and OLAP-based V2 architecture.
+A production-style **batch ELT data platform built around the NYC Taxi trip dataset**, redesigned from a Postgres-based V1 architecture into an object-storage and OLAP-based V2 architecture.
 
 The platform emphasizes **deterministic batch processing, explicit data quality signaling, safe reruns, operational metadata, and analytical scalability**.
 
@@ -56,154 +56,148 @@ All components are containerized and orchestrated through **Docker Compose** for
 
 ### V2 Pipeline Flow
 
-```text
-NYC Taxi Monthly Parquet
-          │
-          ▼
-      Airflow
-          │
-          ▼
-    Spark Batch ELT
-          │
-          ▼
-    ┌───────────────┐
-    │   MinIO       │
-    │ Object Store  │
-    └───────────────┘
-          │
-          ├── Raw
-          │
-          ├── Base
-          │
-          └── Quarantine
+    NYC Taxi Monthly Parquet
+              │
+              ▼
+           Airflow
+              │
+              ▼
+        Spark Batch ELT
+              │
+              ▼
+            MinIO
+         Object Storage
+              │
+         ┌────┼────────────┐
+         ▼    ▼            ▼
+        Raw  Base     Quarantine
+         │    │            │
+         └────┴────────────┘
                   │
                   ▼
-              dbt
+                 dbt
                   │
                   ▼
-          ┌───────────────┐
-          │   StarRocks   │
-          │  OLAP Layer   │
-          └───────────────┘
+             StarRocks
+            OLAP Warehouse
                   │
                   ▼
               Metabase
 
-The V2 architecture separates **object storage, data processing, analytical storage, and BI**:
+The V2 architecture separates **durable storage, data processing, analytical serving, and BI**:
 
-* **Airflow** orchestrates monthly batch processing
-* **Spark** performs ingestion, cleansing, and data quality classification
-* **MinIO** provides durable Parquet-based object storage
-* **dbt** manages analytical transformations and data modeling
-* **StarRocks** serves as the analytical OLAP warehouse
-* **Postgres** stores operational metadata
-* **Metabase** provides analytical dashboards
+- **Airflow** orchestrates monthly batch processing
+- **Spark** performs ingestion, cleansing, and data quality classification
+- **MinIO** provides durable Parquet-based object storage
+- **dbt** manages analytical transformations and data modeling
+- **StarRocks** serves as the analytical OLAP warehouse
+- **Postgres** stores operational metadata
+- **Metabase** provides analytical dashboards
 
 ---
 
 # V1 → V2 Architecture Evolution
 
-The project originally used PostgreSQL as both the raw data store and analytical warehouse.
+The project originally used Postgres as both the raw data store and analytical warehouse.
 
-### V1
+## V1
 
-```text
-Monthly Parquet
-      │
-      ▼
-   Spark ELT
-      │
-      ▼
-   Postgres
-      │
-      ▼
-     dbt
-      │
-      ▼
-  Analytics
-      │
-      ▼
-  Metabase
-```
+    Monthly Parquet
+          │
+          ▼
+       Spark ELT
+          │
+          ▼
+       Postgres
+          │
+          ▼
+         dbt
+          │
+          ▼
+      Analytics
+          │
+          ▼
+      Metabase
 
-The V1 architecture provided a simple and reliable batch ELT workflow, but the PostgreSQL warehouse became the main storage and processing bottleneck as the dataset grew.
+The V1 architecture provided a simple and reliable batch ELT workflow. As the dataset and transformation workload grew, Postgres became responsible for both data storage and analytical processing.
 
-### V2
+The V1 implementation was subsequently optimized for reruns and dbt testing before the storage architecture was redesigned.
 
-```text
-Monthly Parquet
-      │
-      ▼
-   Spark ELT
-      │
-      ▼
-     MinIO
-      │
-      ├── Raw
-      ├── Base
-      └── Quarantine
-             │
-             ▼
-            dbt
-             │
-             ▼
-         StarRocks
-             │
-             ▼
-          Metabase
-```
+## V2
+
+    Monthly Parquet
+          │
+          ▼
+       Spark ELT
+          │
+          ▼
+         MinIO
+          │
+          ├── Raw
+          ├── Base
+          └── Quarantine
+                 │
+                 ▼
+                dbt
+                 │
+                 ▼
+             StarRocks
+                 │
+                 ▼
+              Metabase
 
 V2 separates durable data storage from analytical serving:
 
-* MinIO stores Parquet datasets
-* Spark handles ingestion and data quality processing
-* StarRocks provides the analytical warehouse layer
-* dbt remains responsible for business transformations
-* Postgres continues to store operational metadata
+- MinIO stores processed Parquet datasets
+- Spark handles ingestion and data quality processing
+- dbt manages downstream transformations
+- StarRocks provides the analytical warehouse layer
+- Postgres continues to store operational metadata
+- Metabase remains the BI layer
 
-This redesign reduced the end-to-end pipeline runtime from approximately **15 minutes in V1 to approximately 3 minutes in V2** while retaining the existing batch semantics, data quality handling, and analytical models.
+The redesign reduced the end-to-end pipeline runtime from approximately **15 minutes in V1 to approximately 3 minutes in V2**, while retaining the existing batch semantics, data quality handling, and analytical models.
 
 ---
 
 # Technology Stack
 
-| Layer                | Technology                |
-| -------------------- | ------------------------- |
-| Orchestration        | Apache Airflow            |
-| Processing           | Apache Spark / PySpark    |
-| Object Storage       | MinIO                     |
-| Analytical Warehouse | StarRocks                 |
-| Transformation       | dbt                       |
-| Metadata Store       | PostgreSQL                |
-| BI / Visualization   | Metabase                  |
-| Infrastructure       | Docker Compose            |
-| Data Format          | Parquet                   |
-| Data Source          | NYC Yellow Taxi Trip Data |
+| Layer | Technology |
+|------|------------|
+| Orchestration | Apache Airflow |
+| Processing | Apache Spark / PySpark |
+| Object Storage | MinIO |
+| Analytical Warehouse | StarRocks |
+| Transformation | dbt |
+| Metadata Store | Postgres |
+| BI / Visualization | Metabase |
+| Infrastructure | Docker Compose |
+| Data Format | Parquet |
+| Data Source | NYC Yellow Taxi Trip Data |
 
 ---
 
 # Repository Structure
 
-The public repository focuses on **architecture, configuration, documentation, and workflow screenshots** rather than exposing the complete implementation code.
+The public repository focuses on **architecture, documentation, configuration references, and workflow screenshots** rather than exposing the complete implementation code.
 
-```text
-nyc-taxi-data-platform
-│
-├── screenshots/
-│   ├── v1_pipeline_architecture.png
-│   ├── v2_pipeline_architecture.png
-│   ├── airflow_dag.png
-│   ├── dbt_lineage.png
-│   └── metabase_dashboard.png
-│
-├── docs/
-│   └── v1/
-│       └── README.md
-│
-└── README.md
-```
+    nyc-taxi-data-platform
+    │
+    ├── screenshots/
+    │   ├── v1_pipeline_architecture.png
+    │   ├── v2_pipeline_architecture.png
+    │   ├── airflow_dag.png
+    │   ├── dbt_lineage.png
+    │   └── metabase_dashboard.png
+    │
+    ├── docs/
+    │   └── v1/
+    │       └── README.md
+    │
+    └── README.md
 
 The `docs/v1/README.md` contains the original V1 architecture and implementation documentation.
+
+The current README documents the V2 architecture and its evolution from V1.
 
 ---
 
@@ -211,41 +205,37 @@ The `docs/v1/README.md` contains the original V1 architecture and implementation
 
 The pipeline processes NYC Taxi data in deterministic monthly batches.
 
-```text
-batch_id = YYYY-MM
-```
+    batch_id = YYYY-MM
 
 For example:
 
-```text
-2024-01
-2024-02
-2024-03
-...
-2024-12
-```
+    2024-01
+    2024-02
+    2024-03
+    ...
+    2024-12
 
 Each batch represents a deterministic processing unit.
 
-### Safe Reruns
+## Safe Reruns
 
 The pipeline is designed so that rerunning the same batch does not append duplicate records.
 
 The batch processing strategy supports:
 
-* deterministic monthly processing
-* idempotent reruns
-* historical backfills
-* partition-level replacement
-* partial failure recovery
+- deterministic monthly processing
+- idempotent reruns
+- historical backfills
+- partition-level replacement
+- partial failure recovery
 
-### Data Quality Routing
+## Data Quality Routing
 
-| Data Quality | Storage           |
-| ------------ | ----------------- |
-| Clean        | Base              |
-| Suspicious   | Base + Quarantine |
-| Critical     | Quarantine        |
+| Data Quality | Storage |
+|--------------|---------|
+| Clean | Base |
+| Suspicious | Base + Quarantine |
+| Critical | Quarantine |
 
 This allows anomalous records to remain available for investigation instead of being silently discarded.
 
@@ -257,14 +247,14 @@ Airflow orchestrates the complete batch pipeline.
 
 Key responsibilities include:
 
-* monthly batch scheduling
-* dependency management
-* Spark job execution
-* downstream dbt execution
-* data quality validation
-* operational metadata collection
-* failure handling
-* SLA monitoring
+- monthly batch scheduling
+- dependency management
+- Spark job execution
+- downstream dbt execution
+- data quality validation
+- operational metadata collection
+- failure handling
+- SLA monitoring
 
 Example DAG:
 
@@ -280,38 +270,34 @@ The pipeline is designed around a deterministic `batch_id`, allowing individual 
 
 Spark performs the initial batch ELT processing.
 
-### Processing Responsibilities
+## Processing Responsibilities
 
-* read monthly NYC Taxi Parquet data
-* standardize and clean source fields
-* validate timestamps and numeric fields
-* identify suspicious and critical records
-* assign data quality status
-* write processed datasets to MinIO
+- read monthly NYC Taxi Parquet data
+- standardize and clean source fields
+- validate timestamps and numeric fields
+- identify suspicious and critical records
+- assign data quality status
+- write processed datasets to MinIO
 
-### Data Quality Classification
+## Data Quality Classification
 
 Each source record is classified into one of three categories:
 
-```text
-clean
-suspicious
-critical
-```
+    clean
+    suspicious
+    critical
 
-The classification determines where the record is written.
+The classification determines where the record is written:
 
-```text
-Clean
-  └── Base
+    Clean
+      └── Base
 
-Suspicious
-  ├── Base
-  └── Quarantine
+    Suspicious
+      ├── Base
+      └── Quarantine
 
-Critical
-  └── Quarantine
-```
+    Critical
+      └── Quarantine
 
 Rather than simply filtering invalid records, the pipeline preserves anomalous data and propagates the associated data quality signal downstream.
 
@@ -323,22 +309,20 @@ This makes data quality issues **traceable and auditable**.
 
 V2 uses MinIO as the durable object storage layer and StarRocks as the analytical warehouse.
 
-### MinIO
+## MinIO
 
 Processed Parquet datasets are organized by processing layer and batch:
 
-```text
-s3a://<bucket>/
-│
-├── raw/
-│   └── <batch_id>/
-│
-├── base/
-│   └── <batch_id>/
-│
-└── quarantine/
-    └── <batch_id>/
-```
+    s3a://<bucket>/
+    │
+    ├── raw/
+    │   └── <batch_id>/
+    │
+    ├── base/
+    │   └── <batch_id>/
+    │
+    └── quarantine/
+        └── <batch_id>/
 
 This separation keeps raw source data independent from processed datasets.
 
@@ -356,23 +340,21 @@ Suspicious records may also be retained in Base while carrying a data quality si
 
 Quarantine contains records that require additional investigation or should not enter the analytical dataset.
 
-### StarRocks
+## StarRocks
 
 StarRocks serves as the OLAP warehouse for analytical workloads.
 
 The analytical layer contains dbt-generated models such as:
 
-```text
-dim_vendor
-dim_rate_code
-dim_payment_type
-dim_zones
+    dim_vendor
+    dim_rate_code
+    dim_payment_type
+    dim_zones
 
-fct_trips_wide
-fct_trips_daily_vendor
-fct_trips_daily_pickup_zone
-fct_trips_daily_payment_type
-```
+    fct_trips_wide
+    fct_trips_daily_vendor
+    fct_trips_daily_pickup_zone
+    fct_trips_daily_payment_type
 
 ---
 
@@ -380,39 +362,37 @@ fct_trips_daily_payment_type
 
 dbt manages the analytical transformation layer.
 
-```text
-Staging
-   │
-   ▼
-Intermediate
-   │
-   ▼
-Analytics
-```
+    Staging
+       │
+       ▼
+    Intermediate
+       │
+       ▼
+    Analytics
 
-### Staging
+## Staging
 
 The staging layer provides a stable interface over processed source data and standardizes fields for downstream transformations.
 
-### Intermediate
+## Intermediate
 
 The intermediate layer performs:
 
-* business-level deduplication
-* metric derivation
-* field transformations
-* data quality signal propagation
+- business-level deduplication
+- metric derivation
+- field transformations
+- data quality signal propagation
 
-### Analytics
+## Analytics
 
 The analytics layer produces analytical fact and aggregate models.
 
 Examples include:
 
-* trip-level fact tables
-* daily vendor aggregates
-* daily payment-type aggregates
-* daily pickup-zone aggregates
+- trip-level fact tables
+- daily vendor aggregates
+- daily payment-type aggregates
+- daily pickup-zone aggregates
 
 Example dbt lineage:
 
@@ -428,26 +408,24 @@ Operational metadata is maintained separately from the analytical data stored in
 
 The metadata table:
 
-```text
-metadata.batch_ingestion_stats
-```
+    metadata.batch_ingestion_stats
 
 records batch-level information including:
 
-* input row count
-* base output row count
-* quarantine row count
-* data quality distribution
-* minimum pickup timestamp
-* maximum pickup timestamp
+- input row count
+- base output row count
+- quarantine row count
+- data quality distribution
+- minimum pickup timestamp
+- maximum pickup timestamp
 
 This metadata is used for:
 
-* batch validation
-* anomaly investigation
-* pipeline auditing
-* debugging
-* operational monitoring
+- batch validation
+- anomaly investigation
+- pipeline auditing
+- debugging
+- operational monitoring
 
 Airflow failure callbacks and SLA configuration provide additional task-level failure tracking.
 
@@ -459,12 +437,12 @@ Metabase provides the BI layer on top of StarRocks.
 
 The dashboards cover analytical use cases including:
 
-* trip volume
-* revenue and fare metrics
-* vendor performance
-* payment type distribution
-* tip analysis
-* pickup-zone analytics
+- trip volume
+- revenue and fare metrics
+- vendor performance
+- payment type distribution
+- tip analysis
+- pickup-zone analytics
 
 <p align="center">
   <img src="screenshots/metabase_dashboard.png" width="900">
@@ -478,70 +456,70 @@ The same analytical models are reused across V1 and V2, allowing the BI layer to
 
 The V2 architecture significantly reduced end-to-end pipeline runtime.
 
-| Version | Architecture                               | End-to-End Runtime |
-| ------- | ------------------------------------------ | ------------------ |
-| V1      | Spark → Postgres → dbt → Metabase          | ~15 min            |
-| V2      | Spark → MinIO → dbt → StarRocks → Metabase | ~3 min             |
+| Version | Architecture | End-to-End Runtime |
+|---------|--------------|--------------------|
+| V1 | Spark → Postgres → dbt → Metabase | ~15 min |
+| V2 | Spark → MinIO → dbt → StarRocks → Metabase | ~3 min |
 
-```text
-V1   ███████████████  ~15 min
+    V1   ███████████████  ~15 min
 
-V2   ███              ~3 min
-```
+    V2   ███              ~3 min
 
-The V1 PostgreSQL implementation was also optimized before the V2 migration.
+The V1 Postgres implementation was also optimized before the V2 migration.
 
 Key improvements included:
 
-* partition-level truncate and rewrite for safe reruns
-* partition-aware dbt tests
-* reduced unnecessary full-table scans
-* reduced PostgreSQL temporary storage pressure
+- partition-level truncate and rewrite for safe reruns
+- partition-aware dbt tests
+- reduced unnecessary full-table scans
+- reduced Postgres temporary storage pressure
 
-The original dbt test workload was reduced from approximately **15 minutes to 8–9 minutes**, while PostgreSQL temporary storage usage during large-scale tests decreased from approximately **100 GB to less than 50 MB**.
+The original dbt test workload was reduced from approximately **15 minutes to 8–9 minutes**, while Postgres temporary storage usage during large-scale tests decreased from approximately **100 GB to less than 50 MB**.
+
+These V1 optimizations improved the original implementation before the larger V2 storage architecture redesign.
 
 ---
 
 # Design Principles
 
-| Principle                 | Implementation                      |
-| ------------------------- | ----------------------------------- |
-| Deterministic processing  | Monthly `batch_id = YYYY-MM`        |
-| Safe reruns               | Partition-level replacement         |
-| Explicit data quality     | Clean / Suspicious / Critical       |
-| Durable storage           | Parquet datasets in MinIO           |
-| Analytical performance    | StarRocks OLAP warehouse            |
-| Transformation separation | Spark ingestion + dbt modeling      |
-| Operational visibility    | Batch metadata + Airflow monitoring |
-| Reproducibility           | Docker Compose                      |
+| Principle | Implementation |
+|-----------|----------------|
+| Deterministic processing | Monthly `batch_id = YYYY-MM` |
+| Safe reruns | Partition-level replacement |
+| Explicit data quality | Clean / Suspicious / Critical |
+| Durable storage | Parquet datasets in MinIO |
+| Analytical performance | StarRocks OLAP warehouse |
+| Transformation separation | Spark ingestion + dbt modeling |
+| Operational visibility | Batch metadata + Airflow monitoring |
+| Reproducibility | Docker Compose |
 
 ---
 
 # Lessons Learned
 
-### 1. Separate storage from analytical serving
+## 1. Separate storage from analytical serving
 
-Using an OLAP warehouse directly as the only storage layer creates unnecessary coupling between durable data storage and analytical workloads.
+Using an analytical database as the only storage layer creates unnecessary coupling between durable data storage and analytical workloads.
 
 Object storage provides a more flexible foundation for retaining processed datasets, while StarRocks can focus on analytical serving.
 
-### 2. Data quality should be observable
+## 2. Data quality should be observable
 
 Invalid or suspicious records should not always be silently removed.
 
 Explicit classification and quarantine make data quality issues easier to investigate and audit.
 
-### 3. Rerun semantics should be designed first
+## 3. Rerun semantics should be designed first
 
 A batch pipeline should define what happens when the same batch runs twice.
 
 Deterministic batch identifiers and partition-level replacement make reruns predictable.
 
-### 4. Performance optimization should follow actual bottlenecks
+## 4. Optimize before redesigning
 
-The V1 PostgreSQL implementation was optimized first to address rerun behavior, testing overhead, and temporary storage pressure.
+The V1 Postgres implementation was first optimized to address rerun behavior, testing overhead, and temporary storage pressure.
 
-The V2 redesign then moved durable storage and analytical serving into separate layers.
+The V2 redesign then separated durable storage from analytical serving using MinIO and StarRocks.
 
 ---
 
@@ -549,19 +527,15 @@ The V2 redesign then moved durable storage and analytical serving into separate 
 
 NYC Taxi Batch ELT Platform V2 demonstrates an end-to-end data engineering workflow covering:
 
-* **Airflow** for orchestration
-* **Spark** for batch ELT and data quality processing
-* **MinIO** for Parquet-based object storage
-* **dbt** for analytical transformation
-* **StarRocks** for OLAP workloads
-* **Postgres** for operational metadata
-* **Metabase** for BI and visualization
-* **Docker Compose** for containerized deployment
+- **Airflow** for orchestration
+- **Spark** for batch ELT and data quality processing
+- **MinIO** for Parquet-based object storage
+- **dbt** for analytical transformation
+- **StarRocks** for OLAP workloads
+- **Postgres** for operational metadata
+- **Metabase** for BI and visualization
+- **Docker Compose** for containerized deployment
 
-The project evolved from a PostgreSQL-based V1 implementation into a storage-separated V2 architecture while preserving deterministic batch processing, data quality handling, analytical models, and operational metadata.
+The project evolved from a Postgres-based V1 implementation into a storage-separated V2 architecture while preserving deterministic batch processing, data quality handling, analytical models, and operational metadata.
 
 The V2 redesign reduced end-to-end pipeline runtime from approximately **15 minutes to 3 minutes**.
-
-```
-```
-
