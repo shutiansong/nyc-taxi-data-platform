@@ -94,6 +94,7 @@ MinIO provides the durable Parquet storage layer, while StarRocks serves the ana
 
 The project started with a PostgreSQL-centered V1 architecture:
 
+```text
     Monthly Parquet
           │
           ▼
@@ -110,6 +111,7 @@ The project started with a PostgreSQL-centered V1 architecture:
           │
           ▼
        Metabase
+```
 
 V1 provided a simple and reliable batch ELT workflow, but PostgreSQL was responsible for both persistent data storage and analytical workloads.
 
@@ -117,6 +119,7 @@ Before moving to V2, the V1 pipeline was optimized around rerun behavior, Postgr
 
 V2 separates durable storage from analytical serving:
 
+```text
     Raw Parquet
          │
          ▼
@@ -135,6 +138,7 @@ V2 separates durable storage from analytical serving:
              │
              ▼
         Analytics
+```
 
 The V2 redesign reduced end-to-end pipeline runtime from approximately **15 minutes in V1 to approximately 3 minutes in V2**, while retaining the existing batch semantics, data quality handling, and analytical models.
 
