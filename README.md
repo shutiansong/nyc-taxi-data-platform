@@ -53,31 +53,30 @@ The project is fully containerized with **Docker Compose**. The public repositor
 
 The V2 pipeline follows a storage-separated batch ELT architecture:
 
-    NYC Taxi Monthly Parquet
-              │
-              ▼
-            MinIO
-             Raw
-              │
-              ▼
-        Spark Batch ELT
-              │
-         ┌────┴─────────────┐
-         │                  │
-         ▼                  ▼
-       MinIO             Postgres
-   Base/Quarantine      Metadata
-         │
-         ▼
-   StarRocks External Tables
-         │
-         ▼
-        dbt
-         │
-         ▼
-   Analytics Models
-         │
-         ▼
+NYC Taxi Monthly Parquet
+          │
+          ▼
+        MinIO
+         Raw
+          │
+          ▼
+    Spark Batch ELT
+       │       │
+       │       └──────────────► Postgres
+       │                       Metadata
+       ▼
+   MinIO Base / Quarantine
+          │
+          ▼
+ StarRocks External Tables
+          │
+          ▼
+         dbt
+          │
+          ▼
+ Analytics Models
+          │
+          ▼
       Metabase
 
 The processing flow is:
