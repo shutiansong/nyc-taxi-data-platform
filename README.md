@@ -258,7 +258,7 @@ This makes data quality issues traceable and auditable while keeping anomalous r
 
 StarRocks exposes the processed Parquet datasets stored in MinIO through external tables.
 
-dbt performs the downstream transformations directly in StarRocks:
+dbt executes analytical transformations in StarRocks and builds the final analytical models:
 
 ```text
 Processed Data
