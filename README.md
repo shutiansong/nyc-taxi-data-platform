@@ -249,7 +249,7 @@ Rather than silently filtering anomalous records, the pipeline preserves them in
 This makes data quality issues traceable and auditable while keeping the processing result available for investigation.
 
 <p align="center">
-  <img src="screenshots/airflow_dag.png" width="900">
+  <img src="screenshots/v2/airflow_dag.png" width="900">
 </p>
 
 ---
@@ -292,13 +292,13 @@ fct_trips_daily_payment_type
 These models support analytical use cases including trip volume, revenue, vendor performance, payment behavior, and pickup-zone analysis.
 
 <p align="center">
-  <img src="screenshots/dbt_lineage.png" width="900">
+  <img src="screenshots/v2/dbt_lineage.png" width="900">
 </p>
 
 Metabase consumes the final analytical models for BI and visualization.
 
 <p align="center">
-  <img src="screenshots/metabase_dashboard.png" width="900">
+  <img src="screenshots/v2/metabase_dashboard.png" width="900">
 </p>
 
 ---
