@@ -42,7 +42,7 @@ A production-style **batch ELT data platform built around the NYC Taxi trip data
 # Architecture Overview
 
 <p align="center">
-  <img src="../../screenshots/v1/pipeline_architecture.png" width="850">
+  <img src="../../screenshots/v1/architecture.png" width="850">
 </p>
 
 **Pipeline Flow**
