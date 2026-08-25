@@ -47,13 +47,9 @@ The project is fully containerized with **Docker Compose**. The public repositor
 
 The project evolved from a PostgreSQL-centered V1 batch ELT pipeline into a storage-separated V2 architecture.
 
-In V1, PostgreSQL was used as both the primary data store and analytical warehouse. The V1 implementation was first optimized for rerun behavior, dbt test performance, and PostgreSQL storage pressure.
-
-V2 then separated durable data storage from analytical serving. MinIO stores Parquet datasets, StarRocks provides the analytical warehouse layer, and Postgres is retained for operational metadata.
-
 ## V1 Architecture
 
-````text
+```text
 NYC Taxi Monthly Parquet
           │
           ▼
@@ -74,7 +70,7 @@ NYC Taxi Monthly Parquet
           │
           ▼
        Metabase
-````
+```
 
 ## V2 Architecture
 
@@ -105,11 +101,7 @@ NYC Taxi Monthly Parquet
       Metabase
 ```
 
-The processing flow is:
-
-**Parquet → MinIO Raw → Spark → MinIO Base/Quarantine + Postgres Metadata → StarRocks External Tables → dbt → Analytics → Metabase**
-
-The V2 architecture separates durable Parquet storage from analytical serving while keeping the existing batch semantics and analytical models.
+The main architectural change is the separation of **durable data storage, operational metadata, and analytical serving**.
 
 | | V1 | V2 |
 |---|---|---|
@@ -118,9 +110,12 @@ The V2 architecture separates durable Parquet storage from analytical serving wh
 | Operational Metadata | Postgres | Postgres |
 | Transformation | dbt | dbt |
 | BI | Metabase | Metabase |
-| End-to-End Runtime | ~15 min | ~3 min |
 
-The original V1 documentation is preserved under `docs/v1/README.md`.
+The V2 flow is:
+
+**Parquet → MinIO Raw → Spark → MinIO Base/Quarantine + Postgres Metadata → StarRocks External Tables → dbt → Analytics → Metabase**
+
+The existing V1 documentation is preserved under `docs/v1/README.md`.
 
 ---
 
@@ -148,7 +143,7 @@ The V2 project is organized as independently containerized services.
 ```text
 project-root/
 │
-├── airflow/
+├── airflow/                    # Airflow orchestration
 │   ├── Dockerfile
 │   ├── config/
 │   ├── dags/
@@ -158,45 +153,47 @@ project-root/
 │   ├── requirements.txt
 │   └── sql/
 │
-├── spark/
+├── spark/                      # Spark batch ELT
 │   ├── Dockerfile
 │   ├── conf/
 │   ├── docker-compose.yaml
 │   ├── jobs/
 │   └── requirements.txt
 │
-├── minio/
+├── minio/                      # Parquet object storage
 │   ├── data/
 │   └── docker-compose.yaml
 │
-├── postgres/
+├── postgres/                   # Operational metadata
 │   ├── ddl/
 │   └── docker-compose.yaml
 │
-├── starrocks/
+├── starrocks/                  # Analytical OLAP warehouse
 │   ├── data/
 │   ├── ddl/
 │   └── docker-compose.yaml
 │
-├── dbt/
+├── dbt/                        # Analytical transformation
 │   ├── Dockerfile
 │   ├── docker-compose.yaml
 │   ├── logs/
-│   ├── ny_taxi_rides/
-│   ├── ny_taxi_rides_v2/
+│   ├── ny_taxi_rides/          # V1 dbt project
+│   ├── ny_taxi_rides_v2/       # V2 dbt project
 │   └── profiles.yml
 │
-└── metabase/
-    ├── docker-compose.yaml
-    ├── pg_data/
-    └── plugins/
+├── metabase/                   # BI and dashboards
+│   ├── docker-compose.yaml
+│   ├── pg_data/
+│   └── plugins/
+│
+└── data/
+    └── warehouse/
+        └── postgres/            # Persistent PostgreSQL container data
 ```
 
 Airflow, Spark, and dbt each have their own Dockerfile and Docker Compose configuration. The remaining services are defined through their respective Docker Compose configurations.
 
 The public GitHub repository focuses on **architecture, documentation, configuration references, and workflow screenshots** rather than exposing the complete implementation code.
-
-The original V1 documentation remains available separately under `docs/v1/README.md`.
 
 ---
 
@@ -226,7 +223,6 @@ This provides a consistent basis for:
 - historical backfills
 - partition-level replacement
 - batch-level validation
-- operational metadata tracking
 
 Raw monthly Parquet files are first written to MinIO:
 
@@ -234,7 +230,7 @@ Raw monthly Parquet files are first written to MinIO:
 s3a://<bucket>/raw/<batch_id>/
 ```
 
-Spark reads the corresponding raw batch, performs data cleansing and quality validation, and writes the processed datasets back to MinIO.
+Spark reads the corresponding raw batch, performs cleansing and data quality validation, and writes the processed datasets back to MinIO.
 
 Each record is classified into one of three quality states:
 
@@ -244,9 +240,9 @@ Each record is classified into one of three quality states:
 | Suspicious | Base + Quarantine |
 | Critical | Quarantine |
 
-Rather than silently filtering anomalous records, the pipeline preserves them in the appropriate storage layer and carries the data quality signal downstream.
+Rather than silently filtering anomalous records, the pipeline preserves them in the appropriate storage layer and carries the associated quality signal downstream.
 
-This makes data quality issues traceable and auditable while keeping the processing result available for investigation.
+This makes data quality issues traceable and auditable while keeping anomalous records available for investigation.
 
 <p align="center">
   <img src="screenshots/v2/airflow_dag.png" width="900">
@@ -330,12 +326,17 @@ Airflow failure callbacks and SLA configuration provide additional task-level fa
 
 # Performance
 
-The V2 architecture significantly reduced the end-to-end pipeline runtime:
+The V2 redesign improved the end-to-end pipeline runtime by separating durable storage from analytical serving.
 
 | Version | Architecture | Runtime |
 |---------|--------------|---------|
 | V1 | Spark → Postgres → dbt → Metabase | ~15 min |
 | V2 | MinIO → Spark → MinIO → StarRocks → dbt → Metabase | ~3 min |
+
+<p align="center">
+  <img src="screenshots/v1/end_to_end_time.png" width="400">
+  <img src="screenshots/v2/end_to_end_time.png" width="400">
+</p>
 
 The V1 implementation was optimized before the V2 migration.
 
@@ -348,7 +349,7 @@ Key V1 improvements included:
 
 These changes reduced dbt test time from approximately **15 minutes to 8–9 minutes** and reduced PostgreSQL temporary file usage from approximately **100 GB to less than 50 MB**.
 
-The V2 redesign then addressed the larger architectural limitation by separating durable storage from analytical serving.
+The V2 redesign then addressed the remaining architectural limitation by separating persistent Parquet storage from analytical serving.
 
 ---
 
@@ -385,7 +386,7 @@ The V2 redesign was then introduced to address the architectural limitations tha
 NYC Taxi Batch ELT Platform V2 demonstrates a production-style batch data engineering architecture built around:
 
 - **Airflow** for orchestration
-- **Spark** for batch processing and data quality
+- **Spark** for batch processing
 - **MinIO** for Parquet-based object storage
 - **Postgres** for operational metadata
 - **StarRocks** for analytical serving
@@ -393,6 +394,4 @@ NYC Taxi Batch ELT Platform V2 demonstrates a production-style batch data engine
 - **Metabase** for BI
 - **Docker Compose** for containerized deployment
 
-The project evolved from a PostgreSQL-centered V1 pipeline into a storage-separated V2 architecture while preserving deterministic batch processing, data quality handling, and analytical models.
-
-The V2 redesign reduced end-to-end pipeline runtime from approximately **15 minutes to 3 minutes**.
+The project demonstrates the evolution of a PostgreSQL-centered batch pipeline toward a storage-separated architecture while retaining deterministic processing, explicit data quality handling, operational metadata, and reusable analytical models.
