@@ -29,6 +29,10 @@ The project is fully containerized with **Docker Compose**. The public repositor
 
 ---
 
+<p align="center">
+  <img src="screenshots/v2/architecture.png" width="900">
+</p>
+
 # Table of Contents
 
 1. [Architecture & Evolution](#architecture--evolution)
