@@ -42,7 +42,7 @@ A production-style **batch ELT data platform built around the NYC Taxi trip data
 # Architecture Overview
 
 <p align="center">
-  <img src="screenshots/v1/pipeline_architecture.png" width="850">
+  <img src="../../screenshots/v1/pipeline_architecture.png" width="850">
 </p>
 
 **Pipeline Flow**
@@ -165,7 +165,7 @@ Key responsibilities include:
 Example DAG structure:
 
 <p align="center">
-  <img src="screenshots/v1/airflow_dag.png" width="850">
+  <img src="../../screenshots/v1/airflow_dag.png" width="850">
 </p>
 
 ---
@@ -238,7 +238,7 @@ dbt builds analytics-ready models on top of Spark-processed data.
 - External storage reduced from ~100GB → <50MB  
 
 <p align="center">
-  <img src="screenshots/v1/dbt_lineage.png" width="850">
+  <img src="../../screenshots/v1/dbt_lineage.png" width="850">
 </p>
 
 ---
@@ -253,7 +253,7 @@ Dashboards provide:
 - Pickup-zone spatial analytics  
 
 <p align="center">
-  <img src="screenshots/v1/metabase_dashboard.png" width="850">
+  <img src="../../screenshots/v1/metabase_dashboard.png" width="850">
 </p>
 
 ---
