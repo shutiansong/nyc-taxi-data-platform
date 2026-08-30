@@ -147,7 +147,10 @@ The V2 project is organized as independently containerized services.
 ```text
 project-root/
 │
-├── airflow/                    # Airflow orchestration
+├── up.sh                        # Start all platform services
+├── down.sh                      # Stop all platform services
+│
+├── airflow/                     # Airflow orchestration
 │   ├── Dockerfile
 │   ├── config/
 │   ├── dags/
@@ -157,35 +160,35 @@ project-root/
 │   ├── requirements.txt
 │   └── sql/
 │
-├── spark/                      # Spark batch ELT
+├── spark/                       # Spark batch ELT
 │   ├── Dockerfile
 │   ├── conf/
 │   ├── docker-compose.yaml
 │   ├── jobs/
 │   └── requirements.txt
 │
-├── minio/                      # Parquet object storage
+├── minio/                       # Parquet object storage
 │   ├── data/
 │   └── docker-compose.yaml
 │
-├── postgres/                   # Operational metadata
+├── postgres/                    # Operational metadata
 │   ├── ddl/
 │   └── docker-compose.yaml
 │
-├── starrocks/                  # Analytical OLAP warehouse
+├── starrocks/                   # Analytical OLAP warehouse
 │   ├── data/
 │   ├── ddl/
 │   └── docker-compose.yaml
 │
-├── dbt/                        # Analytical transformation
+├── dbt/                         # Analytical transformation
 │   ├── Dockerfile
 │   ├── docker-compose.yaml
 │   ├── logs/
-│   ├── ny_taxi_rides/          # V1 dbt project
-│   ├── ny_taxi_rides_v2/       # V2 dbt project
+│   ├── ny_taxi_rides/           # V1 dbt project
+│   ├── ny_taxi_rides_v2/        # V2 dbt project
 │   └── profiles.yml
 │
-├── metabase/                   # BI and dashboards
+├── metabase/                    # BI and dashboards
 │   ├── docker-compose.yaml
 │   ├── pg_data/
 │   └── plugins/
